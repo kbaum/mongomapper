@@ -16,13 +16,13 @@ module MongoMapper
     end
 
     def initialize(model, options)
-      raise ArgumentError, "Options must be a hash" unless options.is_a?(Hash)
+      raise ArgumentError, "Options must be a hash" unless options.respond_to?(:to_hash)
 
       @model      = model
       @options    = {}
       @conditions = {}
 
-      options.each_pair do |key, value|
+      options.to_hash.each_pair do |key, value|
         key = key.respond_to?(:to_sym) ? key.to_sym : key
         if OptionKeys.include?(key)
           @options[key] = value
@@ -53,6 +53,10 @@ module MongoMapper
       [criteria, options]
     end
     
+    def to_hash
+      criteria.merge options
+    end
+    
     def compose(other)
       return other.dup if criteria.empty? && options.empty?
             
@@ -73,6 +77,13 @@ module MongoMapper
       end
       
       self.class.new(@model, hash)
+    end
+    
+    def merge(other)
+      case other
+      when FinderOptions then compose(other)
+      else compose FinderOptions.new(@model, other)
+      end
     end
 
     private

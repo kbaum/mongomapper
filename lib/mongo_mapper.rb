@@ -104,6 +104,7 @@ require 'mongo_mapper/support'
 require 'mongo_mapper/finder_options'
 require 'mongo_mapper/dynamic_finder'
 require 'mongo_mapper/descendant_appends'
+require 'mongo_mapper/scoped_finder'
 
 require 'mongo_mapper/plugins'
 require 'mongo_mapper/plugins/associations'

@@ -237,7 +237,7 @@ class IdentityMapTest < Test::Unit::TestCase
         @person_class.identity_map.clear
 
         people = @person_class.find(person1.id, person2.id, person3.id)
-        assert_in_map(people)
+        assert_in_map(people.to_a)
       end
 
       should "add missing documents to map and return existing ones" do
@@ -304,7 +304,7 @@ class IdentityMapTest < Test::Unit::TestCase
         @person_class.identity_map.clear
 
         people = @person_class.all(:_id => [person1.id, person2.id, person3.id])
-        assert_in_map(people)
+        assert_in_map(people.to_a)
       end
 
       should "add missing documents to map and return existing ones" do
@@ -469,7 +469,7 @@ class IdentityMapTest < Test::Unit::TestCase
             post2 = @post_class.create(:title => 'Bar')
             @post_class.identity_map.clear
             
-            assert_not_in_map(@post_class.all)
+            assert_not_in_map(@post_class.all.to_a)
           end
         end
       end

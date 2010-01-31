@@ -95,7 +95,11 @@ module MongoMapper
       end
 
       def all(options={})
-        find_many(options)
+        ScopedFinder.new(self, options)
+      end
+
+      def scoped(options={})
+        all(options)
       end
 
       def count(options={})
