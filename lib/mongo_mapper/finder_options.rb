@@ -52,6 +52,28 @@ module MongoMapper
     def to_a
       [criteria, options]
     end
+    
+    def compose(other)
+      return other.dup if criteria.empty? && options.empty?
+            
+      hash = criteria.merge options
+      c, o = other.criteria, other.options
+      
+      hash[:fields] = (Array(hash[:fields]) | o[:fields]) if o[:fields]
+      hash[:skip]   = o[:skip] if o[:skip]
+      hash[:limit]  = o[:limit] if o[:limit]
+      hash[:sort]   = compose_sort_order(hash[:sort], o[:sort]) if o[:sort]
+      
+      c.each_pair do |key, value|
+        if hash[key].present?
+          hash[key] = compose_criteria(hash[key], value)
+        else
+          hash[key] = value
+        end
+      end
+      
+      self.class.new(@model, hash)
+    end
 
     private
       def to_mongo_criteria(conditions, parent_key=nil)
@@ -122,6 +144,74 @@ module MongoMapper
         field, direction = str.strip.split(' ')
         direction = FinderOptions.normalized_order_direction(direction)
         [field, direction]
+      end
+      
+      def compose_sort_order(a, b)
+        result = Array(a).dup
+        b.reverse.each do |field, direction|
+          f = field.to_s
+          result.reject! { |f, d| f.to_s == field }
+          result.unshift [ field, direction ]
+        end
+        result
+      end
+      
+      def compose_criteria(a, b)
+        case b
+        when Hash
+          case a
+          when nil then b.dup
+          when Hash
+            result = a.dup
+            b.each_pair do |key, value|
+              case key
+              when '$ne'
+                if result['$ne'] && (result['$ne'] != value)
+                  result['$nin'] = Array(result['$nin']) | [ result.delete('$ne'), value ]
+                else
+                  result['$ne'] = value
+                end
+              when '$lt', '$lte'
+                # TODO: be smart about $lt and $lte together
+                if result[key] && (result[key] != value)
+                  result[key] = [ result[key], value ].min
+                else
+                  result[key] = value
+                end
+              when '$gt', '$gte'
+                # TODO: be smart about $gt and $gte together
+                if result[key] && (result[key] != value)
+                  result[key] = [ result[key], value ].max
+                else
+                  result[key] = value
+                end
+              when '$in'
+                result['$in'] = result.key?('$in') ? (result['$in'] & b['$in']) : b['$in']
+              when '$nin'
+                result['$nin'] = Array(result['$nin']) | value
+              when '$mod'
+                # TODO: find mathematical way of doing this properly
+                result['$mod'] = value
+              when '$all', '$size'
+                # TODO: these should result in empty result sets if they are different
+                result[key] = value
+              else
+                result[key] = case value
+                when Hash then compose_criteria(result[key], value)
+                else value
+                end
+              end
+            end
+            result
+          else
+            compose_criteria({ '$in' => [ a ] }, b)
+          end
+        else
+          case a
+          when Hash then compose_criteria(b, a)
+          else Array(a) & Array(b)
+          end
+        end
       end
   end
 end

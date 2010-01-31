@@ -326,4 +326,88 @@ class FinderOptionsTest < Test::Unit::TestCase
     end
   end
   
+  context "Composing" do
+    context "criteria" do
+      should "compose two basic criteria correctly" do
+        a = FinderOptions.new PostComment, :username => "Foo"
+        b = FinderOptions.new PostComment, :username => "Bar"
+        a.compose(b).criteria.should == { :username => { '$in' => [] } } # since there is no overlap
+      end
+
+      should "compose two array criteria correctly" do
+        a = FinderOptions.new PostComment, :username => [ "Foo", "Bar" ]
+        b = FinderOptions.new PostComment, :username => [ "Bar", "Baz" ]
+        a.compose(b).criteria.should == { :username => { '$in' => [ "Bar" ] } }
+      end
+
+      should "compose an array and a scalar correctly" do
+        a = FinderOptions.new PostComment, :username => [ "Foo", "Bar" ]
+        b = FinderOptions.new PostComment, :username => "Bar"
+        a.compose(b).criteria.should == { :username => { '$in' => [ "Bar" ] } }
+        b.compose(a).criteria.should == { :username => { '$in' => [ "Bar" ] } }
+      end
+      
+      should "compose hash criteria correctly" do
+        a = FinderOptions.new Message, :position => { '$gte' => 4 }
+        b = FinderOptions.new Message, :position => { '$lt' => 8 }
+        a.compose(b).criteria.should == { :position => { '$gte' => 4, '$lt' => 8 } }
+      end
+      
+      should "resolve collisions for scalar comparisons" do
+        a = FinderOptions.new Message, :position => { '$lt' => 4, '$gte' => 3 }
+        b = FinderOptions.new Message, :position => { '$lt' => 8, '$gte' => 2 }
+        a.compose(b).criteria.should == { :position => { '$lt' => 4, '$gte' => 3 } }
+      end
+      
+      should "convert different $ne criteria to $nin" do
+        a = FinderOptions.new Message, :position => { '$ne' => 3 }
+        b = FinderOptions.new Message, :position => { '$ne' => 2 }
+        a.compose(b).criteria.should == { :position => { '$nin' => [ 3, 2 ] } }
+      end
+
+      should "not convert same $ne criteria to $nin" do
+        a = FinderOptions.new Message, :position => { '$ne' => 2 }
+        b = FinderOptions.new Message, :position => { '$ne' => 2 }
+        a.compose(b).criteria.should == { :position => { '$ne' => 2 } }
+      end
+      
+      should "work arbitrarily deep" do
+        a = FinderOptions.new(Room, :foo => { :bar => [1,2,3] })
+        b = FinderOptions.new(Room, :foo => { :bar => { '$lt' => 4 }, :baz => 5 })
+        a.compose(b).criteria.should == { :foo => { :bar => { '$in' => [ 1, 2, 3 ], '$lt' => 4 }, :baz => 5 } }
+      end
+    end
+    
+    context "options" do
+      should "compose fields correctly" do
+        a = FinderOptions.new PostComment, :fields => [ :username, :commentable_type, :commentable_id ]
+        b = FinderOptions.new PostComment, :fields => [ :username, :body ]
+        assert_same_elements a.compose(b).options[:fields], [ :username, :body, :commentable_type, :commentable_id ]
+      end
+    
+      should "compose limit correctly" do
+        a = FinderOptions.new PostComment, :limit => 10
+        b = FinderOptions.new PostComment, :limit => 5
+        a.compose(b).options[:limit].should == 5
+      end
+    
+      should "compose skip correctly" do
+        a = FinderOptions.new PostComment, :skip => 10
+        b = FinderOptions.new PostComment, :skip => 5
+        a.compose(b).options[:skip].should == 5
+      end
+    
+      should "compose order correctly" do
+        a = FinderOptions.new PostComment, :order => "created_at ASC"
+        b = FinderOptions.new PostComment, :order => "updated_at DESC"
+        a.compose(b).options[:sort].should == [[ 'updated_at', -1 ], [ 'created_at', 1 ]]
+      end
+
+      should "compose sort correctly" do
+        a = FinderOptions.new PostComment, :sort => [[ 'updated_at', -1 ], [ 'created_at', 1 ]]
+        b = FinderOptions.new PostComment, :sort => [[ 'updated_at', 1 ]]
+        a.compose(b).options[:sort].should == [[ 'updated_at', 1 ], [ 'created_at', 1 ]]
+      end
+    end
+  end
 end # FinderOptionsTest
