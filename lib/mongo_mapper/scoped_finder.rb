@@ -61,5 +61,13 @@ module MongoMapper
         records.send method, *args
       end
     end
+    
+    (FinderOptions::OptionKeys - [ :select ]).each do |key|
+      class_eval <<-EOS
+        def #{key}(value)
+          scoped :#{key} => value
+        end
+      EOS
+    end
   end
 end

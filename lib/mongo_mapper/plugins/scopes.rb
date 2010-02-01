@@ -11,6 +11,10 @@ module MongoMapper
         def find(*args)
           @model.all(options_for(*args))
         end
+        
+        def first(options = {})
+          scoped(options).limit(1)
+        end
       
       private
         def options_for(*args)
