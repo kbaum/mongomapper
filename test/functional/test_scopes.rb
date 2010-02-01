@@ -11,8 +11,9 @@ class ScopesTest < Test::Unit::TestCase
       key :age, Integer
       key :date, Date
       
-      scope :nunemaker, { :last_name => "Nunemaker" }
+      scope :nunemaker, :last_name => "Nunemaker"
       scope :named, lambda { |filter| { :first_name => filter } }
+      scope :oldest_first, :sort => [[ :age, -1 ]]
     end
   end
 
@@ -41,6 +42,10 @@ class ScopesTest < Test::Unit::TestCase
     
     should "compose scopes correctly" do
       assert_same_elements @document.nunemaker.named("John"), [ @doc1 ]
+    end
+    
+    should "accept scope options for sort" do
+      @document.oldest_first.limit(1).should == [ @doc2 ]
     end
   end
 end

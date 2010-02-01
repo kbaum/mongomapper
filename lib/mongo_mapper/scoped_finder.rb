@@ -4,7 +4,7 @@ module MongoMapper
     
     attr_reader :model, :options
     
-    delegate :[], :each, :to_a, :to => :records
+    delegate :[], :each, :to_a, :inspect, :to => :records
     
     def initialize(model, options = {})
       @model = model
@@ -48,6 +48,10 @@ module MongoMapper
       else
         scoped(options)
       end
+    end
+    
+    def first(options = {})
+      scoped(options).limit(1).to_a.first
     end
     
     def scoped(options = {})
