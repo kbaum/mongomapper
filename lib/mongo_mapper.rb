@@ -120,6 +120,7 @@ require 'mongo_mapper/plugins/logger'
 require 'mongo_mapper/plugins/pagination'
 require 'mongo_mapper/plugins/protected'
 require 'mongo_mapper/plugins/rails'
+require 'mongo_mapper/plugins/scopes'
 require 'mongo_mapper/plugins/serialization'
 require 'mongo_mapper/plugins/validations'
 

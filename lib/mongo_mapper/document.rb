@@ -20,6 +20,7 @@ module MongoMapper
         plugin Plugins::Pagination
         plugin Plugins::Protected
         plugin Plugins::Rails
+        plugin Plugins::Scopes
         plugin Plugins::Serialization
         plugin Plugins::Validations
         plugin Plugins::Callbacks # for now callbacks needs to be after validations
@@ -95,7 +96,7 @@ module MongoMapper
       end
 
       def all(options={})
-        ScopedFinder.new(self, options)
+        find_many(options)
       end
 
       def scoped(options={})
