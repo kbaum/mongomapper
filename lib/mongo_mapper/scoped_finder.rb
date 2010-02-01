@@ -55,7 +55,11 @@ module MongoMapper
     end
     
     def method_missing(method, *args)
-      records.send method, *args
+      if model.has_scope?(method)
+        model.send method, args
+      else
+        records.send method, *args
+      end
     end
   end
 end

@@ -10,6 +10,9 @@ class ScopesTest < Test::Unit::TestCase
       key :last_name, String
       key :age, Integer
       key :date, Date
+      
+      scope :nunemaker, { :last_name => "Nunemaker" }
+      scope :named, lambda { |filter| { :first_name => filter } }
     end
   end
 
@@ -21,11 +24,23 @@ class ScopesTest < Test::Unit::TestCase
     end
     
     should "find scoped documents with a dynamic method name" do
-      @document.scoped_by_last_name('Nunemaker', :order => 'age DESC').should == [ @doc1, @doc3 ]
+      assert_same_elements @document.scoped_by_last_name('Nunemaker'), [ @doc1, @doc3 ]
     end
     
     should "return a scope when called with a dynamic method name" do
       @document.scoped_by_last_name('Nunemaker').all(:age.gt => 26).should == [ @doc1 ]
+    end
+
+    should "handle named scopes correctly" do
+      assert_same_elements @document.nunemaker, [ @doc1, @doc3 ]
+    end
+    
+    should "handle named scopes with procs correctly" do
+      assert_same_elements @document.named(/^Ste/), [ @doc2, @doc3 ]
+    end
+    
+    should "compose scopes correctly" do
+      assert_same_elements @document.nunemaker.named("John"), [ @doc1 ]
     end
   end
 end
