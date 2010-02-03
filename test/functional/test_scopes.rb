@@ -48,4 +48,24 @@ class ScopesTest < Test::Unit::TestCase
       @document.oldest_first.limit(1).should == [ @doc2 ]
     end
   end
+  
+  context "on associations" do
+    setup do
+      Project.collection.remove
+      Collaborator.collection.remove
+      @project = Project.create
+      @john = @project.collaborators.create :name => "John"
+      @matt = @project.collaborators.create :name => "Matt"
+      @other_john = Collaborator.create :name => "John"
+      Collaborator.scope :johns, { :name => "John" }
+    end
+
+    should "allow dynamic scopes" do
+      @project.collaborators.scoped(:name => "John").should == [ @john ]
+    end
+
+    should "allow named scopes" do
+      @project.collaborators.all.johns.should == [ @john ]
+    end
+  end
 end

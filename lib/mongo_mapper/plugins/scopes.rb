@@ -25,7 +25,8 @@ module MongoMapper
       
       module ClassMethods
         def scope(name, options = {})
-          scopes[name.to_sym] = Scope.new(self, name, options)
+          name = name.to_sym
+          scopes[name] = Scope.new(self, name, options)
         end
         
         def all(options={})

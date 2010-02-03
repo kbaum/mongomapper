@@ -4,7 +4,7 @@ module MongoMapper
       class Collection < Proxy
         def to_ary
           load_target
-          if target.is_a?(Array)
+          if target.respond_to?(:to_ary)
             target.to_ary
           else
             Array(target)

@@ -4,7 +4,8 @@ module MongoMapper
     
     attr_reader :model, :options
     
-    delegate :[], :each, :to_a, :inspect, :to => :records
+    delegate :[], :each, :to_a, :to_ary, :inspect, :to => :records
+    delegate :has_scope?, :to => :model
     
     def initialize(model, options = {})
       @model = model
@@ -59,8 +60,8 @@ module MongoMapper
     end
     
     def method_missing(method, *args)
-      if model.has_scope?(method)
-        model.send method, args
+      if has_scope?(method)
+        model.send(method, *args).all(proxy_options)
       else
         records.send method, *args
       end
